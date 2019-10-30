@@ -2,47 +2,90 @@ package quickcarpet.utils;
 
 import net.minecraft.item.ItemStack;
 
+//Don't store instances of InventoryOptimizer, unless you sync with the corresponding inventory!
+//DoubleInventoryOptimizer actually handles that in DoubleInventoryMixin
 public class DoubleInventoryOptimizer extends InventoryOptimizer {
     private final OptimizedInventory first;
-    private int firstSize;
+    private final InventoryOptimizer firstOpt;
     private final OptimizedInventory second;
-    private int secondSize;
+    private final InventoryOptimizer secondOpt;
+
+
+
 
     public DoubleInventoryOptimizer(OptimizedInventory first, OptimizedInventory second) {
         super(null);
         this.first = first;
         this.second = second;
-        firstSize = first.getInvSize();
-        secondSize = second.getInvSize();
+        this.firstOpt = first.getOptimizer();
+        this.secondOpt = second.getOptimizer();
     }
 
     @Override
-    public void recalculate() {
-        totalSlots = size();
-        InventoryOptimizer firstOpto = first.getOptimizer();
-        InventoryOptimizer secondOpto = second.getOptimizer();
-        bloomFilter = firstOpto.bloomFilter | secondOpto.bloomFilter;
-        firstFreeSlot = firstOpto.firstFreeSlot;
-        if (firstFreeSlot < 0) {
-            preEmptyBloomFilter = firstOpto.bloomFilter | secondOpto.preEmptyBloomFilter;
-            firstFreeSlot = firstSize + secondOpto.firstFreeSlot;
-            if (firstFreeSlot < firstSize) firstFreeSlot = -1;
+    public void onItemStackCountChanged(int index, int countChange) {
+        int firstSize = first.getInvSize();
+        if (index >= firstSize) {
+            if (secondOpt != null) secondOpt.onItemStackCountChanged(index - firstSize, countChange);
         } else {
-            preEmptyBloomFilter = firstOpto.preEmptyBloomFilter;
+            if (firstOpt != null) firstOpt.onItemStackCountChanged(index, countChange);
         }
-        occupiedSlots = firstOpto.occupiedSlots + secondOpto.occupiedSlots;
-        fullSlots = firstOpto.fullSlots + secondOpto.fullSlots;
+    }
+
+    public int indexOf(ItemStack stack) {
+        int ret = firstOpt.indexOf(stack);
+        if(ret == -1){
+            ret = secondOpt.indexOf(stack);
+            if(ret != -1)
+                ret += first.getInvSize();
+        }
+        return ret;
+    }
+
+    public boolean hasFreeSlots() {
+        return firstOpt.hasFreeSlots() || secondOpt.hasFreeSlots();
+    }
+
+    public int findInsertSlot(ItemStack stack) {
+        int ret = firstOpt.findInsertSlot(stack);
+        if(ret == -1){
+            ret = secondOpt.findInsertSlot(stack);
+            if(ret != -1)
+                ret += first.getInvSize();
+        }
+        return ret;
+    }
+
+
+    void markEscaped(int slot){
+        //see InventoryOptimizer, not implemented yet, hopefully not required
+    }
+
+
+    @Override
+    public void recalculate() {
+        throw new UnsupportedOperationException("InventoryOptimizer parts have to be calculated individually");
+    }
+    @Override
+    public int getFirstFreeSlot() {
+        int ret = firstOpt.getFirstFreeSlot();
+        if(ret == -1){
+            ret = secondOpt.getFirstFreeSlot();
+            if(ret != -1)
+                ret += first.getInvSize();
+        }
+        return ret;
     }
 
     @Override
     protected ItemStack getSlot(int index) {
         if (index < 0) return ItemStack.EMPTY;
+        int firstSize = first.getInvSize();
         if (index < firstSize) return first.getInvStack(index);
         return second.getInvStack(index - firstSize);
     }
 
     @Override
     protected int size() {
-        return firstSize + secondSize;
+        return first.getInvSize() + second.getInvSize();
     }
 }

@@ -59,7 +59,11 @@
     "TntEntityMixin",
     "WorldChunkMixin",
     "WorldMixin",
-    "ZombieEntityMixin"
+    "ZombieEntityMixin",
+    "BarrelBlockEntityMixin",
+    "ShulkerBoxBlockEntityMixin",
+    "StorageMinecartEntityMixin",
+    "InventoriesMixin"
   ],
   "client": [
     "client.ClientPlayNetworkHandlerMixin",

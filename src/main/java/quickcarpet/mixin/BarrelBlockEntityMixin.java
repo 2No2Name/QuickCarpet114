@@ -1,12 +1,11 @@
 package quickcarpet.mixin;
 
+import net.minecraft.block.entity.BarrelBlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.block.entity.LootableContainerBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.DefaultedList;
-import net.minecraft.util.Tickable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -22,12 +21,12 @@ import javax.annotation.Nullable;
 import java.util.Arrays;
 
 @Feature("optimizedInventories")
-@Mixin(ChestBlockEntity.class)
-public abstract class ChestBlockEntityMixin extends LootableContainerBlockEntity implements OptimizedInventory, Tickable {
+@Mixin(BarrelBlockEntity.class)
+public abstract class BarrelBlockEntityMixin extends LootableContainerBlockEntity implements OptimizedInventory {
     @Shadow private DefaultedList<ItemStack> inventory;
-    @Shadow protected int viewerCount;
+    @Shadow private int viewerCount;
 
-    protected ChestBlockEntityMixin(BlockEntityType<?> beType) {
+    protected BarrelBlockEntityMixin(BlockEntityType<?> beType) {
         super(beType);
     }
 
@@ -43,7 +42,7 @@ public abstract class ChestBlockEntityMixin extends LootableContainerBlockEntity
             inventory = new InventoryListOptimized<>(Arrays.asList((ItemStack[])inventory.toArray()),ItemStack.EMPTY);
     }
 
-    @Redirect(method = "fromTag", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/DefaultedList;ofSize(ILjava/lang/Object;)Lnet/minecraft/util/DefaultedList;"))
+    @Redirect(method = "fromTag(Lnet/minecraft/nbt/CompoundTag;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/DefaultedList;ofSize(ILjava/lang/Object;)Lnet/minecraft/util/DefaultedList;"))
     private DefaultedList<ItemStack> createInventory2(int int_1, Object object_1) {
         return InventoryListOptimized.ofSize(int_1,(ItemStack) object_1);
     }
